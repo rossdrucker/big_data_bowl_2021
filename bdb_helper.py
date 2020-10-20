@@ -19,29 +19,29 @@ def make_teams_info():
     ]
     
     primary_hex = [
-        '#99213e', '#a9162d', '#241075', '#c8023a', '#0085ca', '#0b162a',
-        '#fb4f14', '#311d00', '#041e42', '#fb4f14', '#0076b6', '#203731',
-        '#03202f', '#002c5f', '#006778', '#e31837', '#003594', '#0080c6', '#008e97',
-        '#4f2683', '#002244', '#d3bc8d', '#0b2265', '#125740', '#000000', '#004c54',
+        '#000000', '#000000', '#bc9428', '#00308f', '#0085ca', '#0b162a',
+        '#fb4f14', '#311d00', '#ffffff', '#fb4f14', '#0076b6', '#203731',
+        '#03202f', '#002c5f', '#101820', '#ffffff', '#003594', '#0080c6', '#008e97',
+        '#ffc62f', '#002244', '#d3bc8d', '#0b2265', '#125740', '#000000', '#004c54',
         '#ffb612', '#002244', '#aa0000', '#d50a0a', '#0c2340', '#773141',
         '#f5f7f8', '#f6f4f4'
     ]
     
     secondary_hex = [
-        '#ffb700', '#000000', '#bc9428', '#00308f', '#101820', '#e64100',
-        '#000000', '#ff3c00', '#869397', '#002244', '#b0b7bc', '#ffb612',
-        '#a71930', '#ffffff', '#9f792c', '#ffb81c', '#ffa300', '#ffc20e', '#fc4c02',
-        '#ffc62f', '#c60c30', '#101820', '#a71930', '#000000', '#a5acaf', '#565a5c',
-        '#101820', '#69be28', '#b3995d', '#0a0a08', '#4b92db', '#ffb612',
+        '#99213e', '#a9162d', '#241075', '#ffffff', '#101820', '#e64100',
+        '#000000', '#ff3c00', '#041e42', '#002244', '#b0b7bc', '#ffb612',
+        '#ffffff', '#ffffff', '#006778', '#e31837', '#ffa300', '#ffc20e', '#ffffff',
+        '#4f2683', '#c60c30', '#101820', '#a5acaf', '#ffffff', '#a5acaf', '#ffffff',
+        '#101820', '#69be28', '#ffffff', '#ffffff', '#4b92db', '#ffb612',
         '#033c67', '#ce1227'
     ]
     
     ternary_hex = [
-        '#000000', '#ffffff', '#ffffff', '#ffffff', '#bfc0bf', '#ffffff',
-        '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff',
-        '#ffffff', '#a2aaad', '#101820', '#ffffff', '#ffffff', '#ffffff', '#ffffff',
-        '#ffffff', '#b0b7bc', '#ffffff', '#a5acaf', '#ffffff', '#ffffff', '#ffffff',
-        '#ffffff', '#a5acaf', '#ffffff', '#34302b', '#8a8d8f', '#ffffff',
+        '#ffb700', '#ffffff', '#ffffff', '#c8023a', '#bfc0bf', '#ffffff',
+        '#ffffff', '#ffffff', '#869397', '#ffffff', '#ffffff', '#ffffff',
+        '#a71930', '#a2aaad', '#9f792c', '#ffb81c', '#ffffff', '#ffffff', '#fc4c02',
+        '#ffffff', '#b0b7bc', '#ffffff', '#a71930', '#000000', '#ffffff', '#565a5c',
+        '#ffffff', '#a5acaf', '#b3995d', '#34302b', '#8a8d8f', '#ffffff',
         '#839eb4', '#f2bec3'
     ]
     
@@ -449,3 +449,12 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         return None
     else:
         return ax
+    
+if __name__ == '__main__':
+    import time
+    games = pd.read_csv('data/games.csv')
+    games.columns = ['gameId', 'gameDate', 'gameTimeEastern', 'home_team', 'away_team', 'week']
+    for i, game in games.iterrows():
+        draw_field(game['home_team'], game['away_team'], show = True)
+        time.sleep(3)
+        
