@@ -52,9 +52,7 @@ def make_teams_info():
         'secondary_hex': secondary_hex,
         'ternary_hex': ternary_hex
     })
-    
-    
-
+        
 def convert_trans(df, start = 'ft', trans = True, x_trans = 60, y_trans = 80/3):
     """
     Parameters
@@ -126,7 +124,7 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         })
     )
     
-    midline = pd.DataFrame({
+    midlines = pd.DataFrame({
         'x': [-2/12, 2/12, 2/12, -2/12, -2/12],
         'y': [-80 + (4/12), -80 + (4/12), -20 + (4/12), -20 + (4/12), -80 + (4/12)]
     }).append(
@@ -135,7 +133,27 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
             'y': [20 - (4/12), 20 - (4/12), 80 - (4/12), 80 - (4/12), 20 - (4/12)]
         })
     )
-    
+        
+    yd_line_45_r = pd.DataFrame({
+            'x': [15 - (2/12), 15 + (2/12), 15 + (2/12), 15 - (2/12), 15 - (2/12)],
+            'y': [-80 + (4/12), -80 + (4/12), -20 + (4/12), -20 + (4/12), -80 + (4/12)]     
+    }).append(
+        pd.DataFrame({
+            'x': [15 - (2/12), 15 + (2/12), 15 + (2/12), 15 - (2/12), 15 - (2/12)],
+            'y': [20 - (4/12), 20 - (4/12), 80 - (4/12), 80 - (4/12), 20 - (4/12)]
+        })
+    )
+        
+    yd_line_45_l = pd.DataFrame({
+            'x': [-15 + (2/12), -15 - (2/12), -15 - (2/12), -15 + (2/12), -15 + (2/12)],
+            'y': [-80 + (4/12), -80 + (4/12), -20 + (4/12), -20 + (4/12), -80 + (4/12)]
+    }).append(
+        pd.DataFrame({
+            'x': [-15 + (2/12), -15 - (2/12), -15 - (2/12), -15 + (2/12), -15 + (2/12)],
+            'y': [20 - (4/12), 20 - (4/12), 80 - (4/12), 80 - (4/12), 20 - (4/12)]            
+        })
+    )
+
     # Create all of the minor yard lines (there are four sets)
     minor_yd_lines_b = pd.DataFrame({
         'x': [],
@@ -178,20 +196,23 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         'y': []
     })
     
-    major_yd_lines_ft = np.arange(15, 150, 15)
+    major_yd_lines_ft = np.arange(30, 150, 15)
     
     for i in range(0, len(major_yd_lines_ft)):
         major_yd_lines = major_yd_lines.append(
             pd.DataFrame({
                 'x': [major_yd_lines_ft[i] - (2/12), major_yd_lines_ft[i] + (2/12), major_yd_lines_ft[i] + (2/12), major_yd_lines_ft[i] - (2/12), major_yd_lines_ft[i] - (2/12)],
-                'y': [-80 + (4/12), -80 + (4/12), 80 - (4/12), 80 - (4/12), -80 + (4/12)]
+                'y': [-80 + (4/12), -80 + (4/12), 80 - (4/12), 80 - (4/12), -80 + (4/12)],
+                'ydg': np.arange(30, 150, 15)[i] / 3
             })
         )
         
     major_yd_lines = major_yd_lines.append(
         pd.DataFrame({
             'x': -1 * major_yd_lines['x'],
-            'y': major_yd_lines['y']
+            'y': major_yd_lines['y'],
+            'ydg': major_yd_lines['ydg']
+            
         })
     )
     
@@ -335,12 +356,14 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         sidelines = convert_trans(sidelines)
         endlines = convert_trans(endlines)
         goal_lines = convert_trans(goal_lines)
-        midline = convert_trans(midline)
+        midlines = convert_trans(midlines)
         minor_yd_lines_b = convert_trans(minor_yd_lines_b)
         minor_yd_lines_t = convert_trans(minor_yd_lines_t)
         minor_yd_lines_l = convert_trans(minor_yd_lines_l)
         minor_yd_lines_u = convert_trans(minor_yd_lines_u)
         major_yd_lines = convert_trans(major_yd_lines)
+        yd_line_45_r = convert_trans(yd_line_45_r)
+        yd_line_45_l = convert_trans(yd_line_45_l)
         hashes_l = convert_trans(hashes_l)
         hashes_u = convert_trans(hashes_u)
         extra_pt_mark = convert_trans(extra_pt_mark)
@@ -384,13 +407,15 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
     ax.fill(sidelines['x'], sidelines['y'], '#ffffff')
     ax.fill(endlines['x'], endlines['y'], '#ffffff')
     ax.fill(goal_lines['x'], goal_lines['y'], '#ffffff')
-    ax.fill(midline['x'], midline['y'], '#ffffff')
+    ax.fill(midlines['x'], midlines['y'], '#ffffff')
     
     # Add minor yard lines and major yard lines
     ax.fill(minor_yd_lines_b['x'], minor_yd_lines_b['y'], '#ffffff')
     ax.fill(minor_yd_lines_t['x'], minor_yd_lines_t['y'], '#ffffff')
     ax.fill(minor_yd_lines_l['x'], minor_yd_lines_l['y'], '#ffffff')
     ax.fill(minor_yd_lines_u['x'], minor_yd_lines_u['y'], '#ffffff')
+    ax.fill(yd_line_45_r['x'], yd_line_45_r['y'],'#ffffff')
+    ax.fill(yd_line_45_l['x'], yd_line_45_l['y'],'#ffffff')
     ax.fill(major_yd_lines['x'], major_yd_lines['y'], '#ffffff')
     
     # Add hash marks and extra point markers
@@ -407,7 +432,8 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
             fontsize = 50,
             color = '#ffffff',
             fontweight = 'bold',
-            rotation = label['rotation']
+            rotation = label['rotation'],
+            fontname = 'Impact'
         )
     
     # Add the arrows to the field
@@ -427,6 +453,7 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         fontdict = {'ha': 'center', 'va': 'center'},
         fontsize = 100,
         fontweight = 'bold',
+        fontname = 'Impact',
         color = f'{home_info.secondary_hex.iloc[0]}',
         rotation = 90,
         path_effects = [pe.withStroke(linewidth = 20, foreground = f'{home_info.primary_hex.iloc[0]}')]
@@ -439,6 +466,7 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         fontdict = {'ha': 'center', 'va': 'center'},
         fontsize = 100,
         fontweight = 'bold',
+        fontname = 'Impact',
         color = f'{away_info.secondary_hex.iloc[0]}',
         rotation = -90,
         path_effects = [pe.withStroke(linewidth = 20, foreground = f'{away_info.primary_hex.iloc[0]}')]
@@ -451,8 +479,4 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         return ax
     
 if __name__ == '__main__':
-    games = pd.read_csv('data/games.csv')
-    games.columns = ['gameId', 'gameDate', 'gameTimeEastern', 'home_team', 'away_team', 'week']
-    for i, game in games.iterrows():
-        draw_field(game['home_team'], game['away_team'], show = True)
-        
+    draw_field('chi', 'gb', True)    
