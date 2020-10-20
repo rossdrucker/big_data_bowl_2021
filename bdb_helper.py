@@ -451,10 +451,8 @@ def draw_field(home = 'nfl', away = '', show = False, unit = 'yd', zero = 'l'):
         return ax
     
 if __name__ == '__main__':
-    import time
     games = pd.read_csv('data/games.csv')
     games.columns = ['gameId', 'gameDate', 'gameTimeEastern', 'home_team', 'away_team', 'week']
     for i, game in games.iterrows():
         draw_field(game['home_team'], game['away_team'], show = True)
-        time.sleep(3)
         
