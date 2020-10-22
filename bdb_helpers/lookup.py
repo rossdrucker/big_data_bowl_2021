@@ -21,11 +21,10 @@ def game_id(home, away):
     -------
     desired_game_id: the game_id of the game in which home hosted away
     """
-    # Validate that the home and away team supplied are valid teams
+    # Validate that the home and away team codes supplied are valid team codes
     home = check.team_code(home)
     away = check.team_code(away)
     
-    # Loop to stay in until the game is found
     game_found = False
     while not game_found:
         # Bring in the schedule information
@@ -53,7 +52,7 @@ def game_id(home, away):
                 game_found = True
             
             else:
-                # Otherwise, prompt user to supply two new teams
+                # Otherwise, prompt user to supply two new team codes
                 print(f'{home} and {away} did not play each other in this '
                       'dataset')
                 home = check.team_code('')
@@ -83,7 +82,7 @@ def game_teams(gid):
     # Bring in the schedule data
     games = load.games_data()
     
-    # Get the home and away teams
+    # Get the home and away team codes
     home = games.loc[games['game_id'] == gid, 'home'].iloc[0]
     away = games.loc[games['game_id'] == gid, 'away'].iloc[0]
     
