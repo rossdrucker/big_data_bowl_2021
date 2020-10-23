@@ -4,7 +4,7 @@
 import warnings
 import numpy as np
 import pandas as pd
-import bdb_helpers.coord_transformers as coord_ops
+import bdb_helpers.coord_ops as coord_ops
 
 warnings.filterwarnings('ignore')
 
@@ -125,68 +125,8 @@ def teams_data():
     teams_data: a data frame containing information about every team, the
         NFC, and the AFC
     """
-    # Load the games data
-    games = games_data()
-    
-    # Get valid teams
-    teams = [team.upper() for team in games['home'].unique().tolist()]
-    
-    # Reorder so as to get the teams in alphabetical order
-    teams.sort()
-    
-    # Add NFC and AFC in case a generic field is needed
-    teams.append('NFC')
-    teams.append('AFC')
-    
-    # Team nicknames
-    nicknames = [
-        'CARDINALS', 'FALCONS', 'RAVENS', 'BILLS', 'PANTHERS', 'BEARS', 
-        'BENGALS', 'BROWNS', 'COWBOYS', 'BRONCOS', 'LIONS', 'PACKERS',
-        'TEXANS', 'COLTS', 'JAGUARS', 'CHIEFS', 'RAMS', 'CHARGERS',
-        'DOLPHINS', 'VIKINGS', 'PATRIOTS', 'SAINTS', 'GIANTS', 'JETS',
-        'RAIDERS', 'EAGLES', 'STEELERS', 'SEAHAWKS', '49ERS', 'BUCCANEERS',
-        'TITANS', 'WASHINGTON', 'NFC', 'AFC'
-    ]
-    
-    # Team's primary hex color for plotting
-    primary_hex = [
-        '#000000', '#000000', '#bc9428', '#00308f', '#0085ca', '#0b162a',
-        '#fb4f14', '#311d00', '#ffffff', '#fb4f14', '#0076b6', '#203731',
-        '#03202f', '#002c5f', '#101820', '#ffffff', '#003594', '#0080c6',
-        '#008e97', '#ffc62f', '#002244', '#d3bc8d', '#0b2265', '#125740',
-        '#000000', '#004c54', '#ffb612', '#002244', '#aa0000', '#d50a0a',
-        '#0c2340', '#773141', '#f5f7f8', '#f6f4f4'
-    ]
-    
-    # Team's secondary hex color for plotting    
-    secondary_hex = [
-        '#99213e', '#a9162d', '#241075', '#ffffff', '#101820', '#e64100',
-        '#000000', '#ff3c00', '#041e42', '#002244', '#b0b7bc', '#ffb612',
-        '#ffffff', '#ffffff', '#006778', '#e31837', '#ffa300', '#ffc20e',
-        '#ffffff', '#4f2683', '#c60c30', '#101820', '#a5acaf', '#ffffff',
-        '#a5acaf', '#ffffff', '#101820', '#69be28', '#ffffff', '#ffffff',
-        '#4b92db', '#ffb612', '#033c67', '#ce1227'
-    ]
-    
-    # Team's ternary hex color for plotting. May not be needed, but better to
-    # have and not need than need and not have
-    ternary_hex = [
-        '#ffb700', '#ffffff', '#ffffff', '#c8023a', '#bfc0bf', '#ffffff',
-        '#ffffff', '#ffffff', '#869397', '#ffffff', '#ffffff', '#ffffff',
-        '#a71930', '#a2aaad', '#9f792c', '#ffb81c', '#ffffff', '#ffffff',
-        '#fc4c02', '#ffffff', '#b0b7bc', '#ffffff', '#a71930', '#000000',
-        '#ffffff', '#565a5c', '#ffffff', '#a5acaf', '#b3995d', '#34302b',
-        '#8a8d8f', '#ffffff', '#839eb4', '#f2bec3'
-    ]
-    
-    # Make the output dataframe
-    teams_data = pd.DataFrame({
-        'team_abbr': teams,
-        'nickname': nicknames,
-        'primary_hex': primary_hex,
-        'secondary_hex': secondary_hex,
-        'ternary_hex': ternary_hex
-    })
+    # Load in the dataset
+    teams_data = pd.read_csv('data/team_data.csv')
     
     return teams_data
 
