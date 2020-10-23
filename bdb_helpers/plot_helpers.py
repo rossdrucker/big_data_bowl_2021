@@ -15,7 +15,7 @@ import bdb_helpers.file_movers as file_ops
 
 warnings.filterwarnings('ignore')
 
-def draw_field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
+def field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
                zero = 'l'):
     """
     Draws a football field with the teams who are participating in the game.
@@ -62,8 +62,8 @@ def draw_field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
     # Get the teams' color codes
     team_info = load.teams_data()
     
-    home_info = team_info[team_info['team_abbr'] == home]
-    away_info = team_info[team_info['team_abbr'] == away]
+    home_info = team_info[team_info['team_code'] == home]
+    away_info = team_info[team_info['team_code'] == away]
     
     #############################
     # Get the field coordinates #
@@ -149,12 +149,12 @@ def draw_field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
         fontsize = 100,
         fontweight = 'bold',
         fontname = 'Impact',
-        color = f'{home_info.secondary_hex.iloc[0]}',
+        color = f'{home_info.endzone_text.iloc[0]}',
         rotation = 90,
         path_effects = [
             pe.withStroke(
                 linewidth = 20,
-                foreground = f'{home_info.primary_hex.iloc[0]}'
+                foreground = f'{home_info.endzone_shadow.iloc[0]}'
             )
         ]
     )
@@ -167,12 +167,12 @@ def draw_field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
         fontsize = 100,
         fontweight = 'bold',
         fontname = 'Impact',
-        color = f'{away_info.secondary_hex.iloc[0]}',
+        color = f'{away_info.endzone_text.iloc[0]}',
         rotation = -90,
         path_effects = [
             pe.withStroke(
                 linewidth = 20,
-                foreground = f'{away_info.primary_hex.iloc[0]}'
+                foreground = f'{away_info.endzone_shadow.iloc[0]}'
             )
         ]
     )
@@ -183,7 +183,7 @@ def draw_field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
     else:
         return fig, ax
     
-def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
+def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
                     plot_los = True, plot_first_down_marker = True,
                     ignore_frame_validation = False, tracking = pd.DataFrame(),
                     plays = pd.DataFrame()):
@@ -217,7 +217,6 @@ def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
     fig, ax: the figure and axes objects (respectively)
     play: the tracking data relevant for the play
     """
-    
     # If a game ID is provided, get the home and away team from the provided
     # game ID
     if gid != 0:
@@ -262,6 +261,16 @@ def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
     home_info = teams_info[teams_info['team_abbr'] == home]
     away_info = teams_info[teams_info['team_abbr'] == away]
     
+    home_uni_base = home_info['home_uni_base'].iloc[0]
+    home_uni_highlight = home_info['home_uni_highlight'].iloc[0]
+    home_uni_number = home_info['home_uni_number'].iloc[0]
+    home_uni_number_highlight = home_info['home_uni_number_highlight'].iloc[0]
+    
+    away_uni_base = away_info['away_uni_base'].iloc[0]
+    away_uni_highlight = away_info['away_uni_highlight'].iloc[0]
+    away_uni_number = away_info['away_uni_number'].iloc[0]
+    away_uni_number_highlight = away_info['away_uni_number_highlight'].iloc[0]
+    
     if plot_los:
         los = find.line_of_scrimmage(gid, pid)
         los = pd.DataFrame({
@@ -286,17 +295,17 @@ def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             'y': [1/9, 1/9, 53 + (2/9), 53 + (2/9), 1/9]
         })
         
-    fig, ax = draw_field(gid)
+    fig, ax = field(gid)
     
     home_frame.plot(
-        'player_x',
-        'player_y',
+        x = 'player_x',
+        y = 'player_y',
         kind = 'scatter',
         ax = ax,
-        color = home_info['secondary_hex'],
-        s = 600,
-        edgecolor = home_info['primary_hex'],
-        linewidth = 3,
+        color = home_uni_base,
+        s = 800,
+        edgecolor = home_uni_highlight,
+        linewidth = 2,
         zorder = 15
     )
     
@@ -305,23 +314,29 @@ def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             x = player['player_x'],
             y = player['player_y'],
             s = str(int(player['player_no'])),
-            fontsize = 20,
-            color = home_info['ternary_hex'].iloc[0],
+            fontsize = 15,
+            color = home_uni_number,
+            path_effects = [
+                pe.withStroke(
+                    linewidth = 3,
+                    foreground = home_uni_number_highlight
+                )
+            ],
             fontweight = 'bold',
             rotation = -90,
             zorder = 20,
             fontdict = {'ha': 'center', 'va': 'center'},
         )
-    
+        
     away_frame.plot(
         'player_x',
         'player_y',
         kind = 'scatter',
         ax = ax,
-        color = away_info['secondary_hex'],
-        s = 600,
-        edgecolor = away_info['primary_hex'],
-        linewidth = 3,
+        color = away_uni_base,
+        s = 800,
+        edgecolor = away_uni_highlight,
+        linewidth = 2,
         zorder = 15
     )
     
@@ -330,8 +345,14 @@ def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             x = player['player_x'],
             y = player['player_y'],
             s = str(int(player['player_no'])),
-            fontsize = 20,
-            color = away_info['ternary_hex'].iloc[0],
+            fontsize = 15,
+            color = away_uni_number,
+            path_effects = [
+                pe.withStroke(
+                    linewidth = 3,
+                    foreground = away_uni_number_highlight
+                )
+            ],
             fontweight = 'bold',
             rotation = 90,
             zorder = 20,
@@ -355,7 +376,7 @@ def draw_play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
     
     return fig, ax, play
 
-def draw_play_gif(gid = 0, pid = 0, home = '', away = '',
+def play_gif(gid = 0, pid = 0, home = '', away = '',
                   tracking = pd.DataFrame()):
     # If a game ID is provided, get the home and away team from the provided
     # game ID
@@ -384,7 +405,7 @@ def draw_play_gif(gid = 0, pid = 0, home = '', away = '',
     # Make each frame as a static image
     for i in np.arange(1, n_frames + 1):
         print(f'Processing frame {i} of {n_frames}')
-        fig, ax, tracking = draw_play_frame(
+        fig, ax, tracking = play_frame(
             gid,
             pid, 
             frame_no = i,
@@ -416,9 +437,97 @@ def draw_play_gif(gid = 0, pid = 0, home = '', away = '',
     return None
 
 if __name__ == '__main__':
+    plot_test_data = pd.read_csv('data/plot_testing.csv')
+    teams_info = load.teams_data()
+    
+    for i, row in plot_test_data.iterrows():
+        home = row['home']
+        away = row['away']
+        
+        home_frame = pd.DataFrame(
+            row[['home', 'home_x', 'home_y', 'home_jersey_no']]
+        ).transpose()
+        away_frame = pd.DataFrame(
+            row[['away', 'away_x', 'away_y', 'away_jersey_no']]
+        ).transpose()
+        home_info = teams_info[teams_info['team_code'] == home]
+        away_info = teams_info[teams_info['team_code'] == away]
+        
+        fig, ax = field(home = home, away = away)
+        
+        home_frame.plot(
+            x = 'home_x',
+            y = 'home_y',
+            kind = 'scatter',
+            ax = ax,
+            color = home_info['home_uni_base'],
+            s = 800,
+            edgecolor = home_info['home_uni_highlight'],
+            linewidth = 2,
+            zorder = 15
+        )
+        
+        for i, player in home_frame.iterrows():
+            ax.text(
+                x = player['home_x'],
+                y = player['home_y'],
+                s = str(int(player['home_jersey_no'])),
+                fontsize = 15,
+                color = home_info['home_uni_number'].iloc[0],
+                path_effects = [
+                    pe.withStroke(
+                        linewidth = 3,
+                        foreground = f'{home_info.home_uni_number_highlight.iloc[0]}'
+                    )
+                ],
+                fontweight = 'bold',
+                rotation = -90,
+                zorder = 20,
+                fontdict = {'ha': 'center', 'va': 'center'},
+            )
+            
+        away_frame.plot(
+            x = 'away_x',
+            y = 'away_y',
+            kind = 'scatter',
+            ax = ax,
+            color = away_info['away_uni_base'],
+            s = 800,
+            edgecolor = away_info['away_uni_highlight'],
+            linewidth = 2,
+            zorder = 15
+        )
+        
+        for i, player in away_frame.iterrows():
+            ax.text(
+                x = player['away_x'],
+                y = player['away_y'],
+                s = str(int(player['away_jersey_no'])),
+                fontsize = 15,
+                color = home_info['away_uni_number'].iloc[0],
+                path_effects = [
+                    pe.withStroke(
+                        linewidth = 2,
+                        foreground = f'{away_info.away_uni_number_highlight.iloc[0]}'
+                    )
+                ],
+                fontweight = 'bold',
+                rotation = 90,
+                zorder = 20,
+                fontdict = {'ha': 'center', 'va': 'center'},
+            )
+        
+        if not os.path.exists(os.path.join('img', 'test_plots')):
+            os.makedirs(os.path.join('img', 'test_plots'))
+            
+        fname = os.path.join('img', 'test_plots', f'plt_preview_{home}.png')
+        plt.savefig(f'{fname}', bbox_inches = 'tight', pad_inches = 0)
+
+
     gid = 2018121603
     pid = 105
     frame_no = 1
-    fig, ax = draw_field(gid)
-    fig, ax, tracking = draw_play_frame(gid, pid, frame_no = frame_no)
-    draw_play_gif(gid, pid, tracking)
+    fig, ax = field(gid)
+    fig, ax, tracking = play_frame(gid, pid, frame_no = frame_no)
+    play_gif(gid, pid, tracking)
+    
