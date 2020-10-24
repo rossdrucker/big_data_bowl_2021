@@ -16,7 +16,7 @@ import bdb_helpers.file_movers as file_ops
 warnings.filterwarnings('ignore')
 
 def field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
-               zero = 'l'):
+          zero = 'l'):
     """
     Draws a football field with the teams who are participating in the game.
     Teams are either supplied via the home and away arguments, or by looking
@@ -258,8 +258,8 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
     ]
     
     teams_info = load.teams_data()
-    home_info = teams_info[teams_info['team_abbr'] == home]
-    away_info = teams_info[teams_info['team_abbr'] == away]
+    home_info = teams_info[teams_info['team_code'] == home]
+    away_info = teams_info[teams_info['team_code'] == away]
     
     home_uni_base = home_info['home_uni_base'].iloc[0]
     home_uni_highlight = home_info['home_uni_highlight'].iloc[0]
