@@ -147,8 +147,7 @@ def play_id(gid, pid):
     gid = game_id(gid)
     
     # Load the plays data and get all plays from the supplied game
-    plays = load.plays_data()
-    plays = plays[plays['game_id'] == gid]    
+    plays = load.plays_data(gid, prechecked_gid = True)
     valid_plays = plays['play_id'].tolist()
     
     play_id_valid = False
@@ -186,10 +185,6 @@ def frame_no(gid, pid, frame, tracking = pd.DataFrame()):
     """
     # Validate the game ID
     gid = game_id(gid)
-    
-    # Load in the plays dataset
-    plays = load.plays_data()
-    plays = plays[plays['game_id'] == gid]
     
     # Find the week number of the game so that the proper tracking information
     # may be provided
