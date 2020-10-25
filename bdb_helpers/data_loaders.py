@@ -4,20 +4,46 @@
 import warnings
 import numpy as np
 import pandas as pd
+
+import bdb_helpers.lookup as find
 import bdb_helpers.coord_ops as coord_ops
+import bdb_helpers.input_checkers as check
 
 warnings.filterwarnings('ignore')
 
-def games_data():
+def games_data(gid = 0, prechecked_gid = False):
     """
     Loads the game/schedule information provided
+    
+    Parameters
+    ----------
+    gid: an integer representing a game ID
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
     
     Returns
     -------
     games: a data frame containing the game (schedule) information
     """
-    # Read in data
-    games = pd.read_csv('data/games.csv')
+    if gid == 0 and prechecked_gid == False:
+        # Read in all data. All data will be returned
+        games = pd.read_csv('data/games.csv')
+    
+    elif gid == 0 and prechecked_gid == True:
+        # Read in all data. All data will be returned
+        games = pd.read_csv('data/games.csv')
+    
+    elif gid != 0 and prechecked_gid == True:
+        # Read in all data, then subset to the game if it exists. If not, alert
+        # user that this is not a valid game ID and return 
+        games = pd.read_csv('data/games.csv')
+        if len(games[games['gameId'] == gid]) > 0:
+            games = games[games['gameId'] == gid]
+        else:
+            print(f'{gid} is not a valid game ID. Returning all game data')
+    else:
+        # Read in only the game data for the pre-checked game ID
+        games = pd.read_csv('data/games.csv')[lambda x: x['gameId'] == gid]
     
     # Rename columns
     games.columns = [
@@ -29,18 +55,80 @@ def games_data():
     
     return games
 
-def plays_data():
+def plays_data(gid = 0, pid = 0, prechecked_gid = False,
+               prechecked_pid = False):
     """
     Loads the plays information provided
     
+    Parameters
+    ----------
+    gid: an integer of a game_id
+    pid: an integer of a play_id
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
+         
     Returns
     -------
     plays: a data frame containing a cleaned, renamed copy of plays
         information
     """
-    # Read in data
-    plays = pd.read_csv('data/plays.csv')
-    
+    if gid == 0:
+        if pid == 0:
+            # If the game ID and play ID are both not provided, read in all
+            # plays data
+            plays = pd.read_csv('data/plays.csv')
+        
+        # If the play ID is provided but is not checked prior to being passed
+        # to the function, check to see if the play exists in the plays data
+        else:
+            if prechecked_pid == False:
+                # Load in all plays with this play ID
+                plays = pd.read_csv('data/plays.csv')[lambda x: \
+                                                      x['playId'] == pid]
+                
+                # If the loaded data has records, that's great. If not, load
+                # all plays data for all games and alert user
+                if not plays.empty:
+                    pass
+                
+                else:
+                    plays = pd.read_csv('data/plays.csv')
+                    print(f'Play ID {pid} does not exist. All plays for all '
+                           'games will be returned.')
+        
+    # If the game ID is supplied...
+    else:
+        # If the game ID has not yet been checked, check it now
+        if prechecked_gid == False:
+            gid = check.game_id(gid)
+        else:
+            pass
+        
+        if pid == 0:
+            plays = pd.read_csv('data/plays.csv')[lambda x: \
+                                                  x['gameId'] == gid]
+        else:
+            if prechecked_pid == False:
+                plays = pd.read_csv('data/plays.csv')[lambda x: \
+                                                      (x['gameId'] == gid) &
+                                                      (x['playId'] == pid)]
+            
+                # If the play for that game does exist, that's great. If not,
+                # load all plays data for this game and alert user
+                if not plays.empty:
+                    pass
+                else:
+                    plays = pd.read_csv('data/plays.csv')[lambda x: \
+                                                          x['gameId'] == gid]
+                    print(f'Play ID {pid} does not exist for game {gid}. All '
+                          f'plays for game {gid} will be returned.')
+            else:
+                plays = pd.read_csv('data/plays.csv')[lambda x: \
+                                                      (x['gameId'] == gid) &
+                                                      (x['playId'] == pid)]
+
     # Rename columns
     plays.columns = [
         'game_id', 'play_id', 'play_description', 'quarter', 'down',
@@ -81,39 +169,98 @@ def plays_data():
     
     return plays
 
-def tracking_data(week = 0):
+def tracking_data(gid = 0, pid = 0, week = 0, prechecked_gid = False,
+                  prechecked_pid = False, prechecked_week = False):
     """
     Loads the tracking information provided for a specified week
     
     Parameters
     ----------
+    gid: an integer of a game_id
+    pid: an integer of a play_id
     week: an integer of which week's tracking data to return. A value of
         0 implies to return all weeks' tracking. The default is 0.
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
 
     Returns
     -------
-    tracking: a data frame containing a cleaned, renamed copy of tracking
+    trk: a data frame containing a cleaned, renamed copy of tracking
         information for the specified week
     """
-    # Check which week to load. If week = 0, load all weeks (this is slow)
-    if week != 0:
-        tracking = pd.read_csv(f'data/week{week}.csv')
-    else:
-        tracking = pd.DataFrame()
+    # Check which week to load. If neither the game ID nor week number are
+    # passed to the function, load all weeks (this is slow)
+    if gid == 0 and week == 0:
+        trk = pd.DataFrame()
         for week in range(1, 17):
             print(f'Loading week {week}...', end = '\r')
             this_week = pd.read_csv(f'data/week{week}.csv')
-            tracking = pd.append([tracking, this_week])
+            trk = pd.concat([trk, this_week])
+    else:
+        # If the game ID is provided, but not checked, check the game ID first
+        if gid != 0:
+            if prechecked_gid == False:
+                gid = check.game_id(gid)
+            else:
+                pass
+            if week == 0:
+                week = find.game_week(gid)
+                prechecked_week = True
+            
+        if week != 0:
+            # If the week is prechecked, that's great. If not, check the week
+            if prechecked_week == True:
+                pass
+            else:
+                week = check.week_number(week)
+            
+        # If the week number is not supplied, set the week number
+        elif gid != 0 :
+            week = check.week_number(week)
+        
+        # If the play ID is provided, but not checked, check the play ID next
+        if pid != 0:
+            if prechecked_pid == False:
+                pid = check.play_id(gid, pid)
+            else:
+                pass
+            
+        # Now that the relevant data has all been checked, load the dataset
+        # accordingly
+        if gid != 0 and pid != 0:
+            # If there is a game ID and play ID supplied, load only the
+            # tracking information for this play in this game
+            trk = pd.read_csv(f'data/week{week}.csv')[lambda x: \
+                                                      (x['gameId'] == gid) &
+                                                      (x['playId'] == pid)]
+        elif gid != 0 and pid == 0:
+            # If there is a game ID but not a play ID supplied, load all
+            # tracking data from all plays of this game
+            trk = pd.read_csv(f'data/week{week}.csv')[lambda x: \
+                                                      x['gameId'] == gid]
+                
+        elif gid == 0 and pid != 0:
+            # If there is a play Id but not a game ID supplied, load all
+            # tracking data from all plays in the week of this game with a
+            # matching play ID
+            trk = pd.read_csv(f'data/week{week}.csv')[lambda x: \
+                                                      (x['playID'] == pid)]
+        else:
+            # If there's no game ID or play ID supplied, load all tracking
+            # data for the week
+            trk = pd.read_csv(f'data/week{week}.csv')
     
     # Rename columns
-    tracking.columns = [
+    trk.columns = [
         'time', 'player_x', 'player_y', 'player_speed', 'player_acceleration',
         'distance', 'player_orientation', 'player_direction', 'event_str',
         'player_id', 'player_name', 'player_no', 'player_position', 'frame_id',
         'team', 'game_id', 'play_id', 'play_direction', 'route_type'
     ]
     
-    return tracking
+    return trk
 
 def teams_data():
     """
