@@ -2,6 +2,7 @@
 @author: Ross Drucker
 """
 import os
+import math
 import warnings
 import numpy as np
 import pandas as pd
@@ -58,29 +59,29 @@ def orient_jersey_num(gid, pid, prechecked_gid = False, prechecked_pid = False,
     if tracking.empty:
         tracking = merge.tracking_and_plays(gid, pid)
     
-    tracking.loc[tracking['team'] == 'football', 'jersey_num_orient'] = 0
+    tracking.loc[tracking['team'] == 'football', 'jersey_num_orientation'] = 0
     
     tracking.loc[
         (tracking['team'] == 'home') & (tracking['play_direction'] == 'right'),
-        'jersey_num_orient'
+        'jersey_num_orientation'
     ] = -90
     
     tracking.loc[
         (tracking['team'] == 'away') & (tracking['play_direction'] == 'right'),
-        'jersey_num_orient'
+        'jersey_num_orientation'
     ] = 90
     
     tracking.loc[
         (tracking['team'] == 'home') & (tracking['play_direction'] == 'left'),
-        'jersey_num_orient'
+        'jersey_num_orientation'
     ] = 90
     
     tracking.loc[
         (tracking['team'] == 'away') & (tracking['play_direction'] == 'left'),
-        'jersey_num_orient'
+        'jersey_num_orientation'
     ] = -90
     
-    return tracking['jersey_num_orient']
+    return tracking['jersey_num_orientation']
 
 def field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
           zero = 'l'):
@@ -252,8 +253,9 @@ def field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
     
 def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
                plot_los = True, plot_first_down_marker = True,
-               prechecked_gid = False, prechecked_pid = False,
-               prechecked_frame = False, tracking = pd.DataFrame()):
+               plot_arrows = True, prechecked_gid = False,
+               prechecked_pid = False, prechecked_frame = False,
+               tracking = pd.DataFrame()):
     """
     Draw a frame of a given play. Teams are either supplied via the home and
     away arguments, or by looking them up from the game_id provided by the gid
@@ -422,6 +424,15 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             zorder = 20,
             fontdict = {'ha': 'center', 'va': 'center'},
         )
+        
+        if plot_arrows:        
+            ax.arrow(x = player['player_x'],
+                     y = player['player_y'],
+                     dx = 3 * math.cos(player['player_orientation']),
+                     dy = 3 * math.sin(player['player_orientation']),
+                     length_includes_head = True, width = 0.3,
+                     color = home_uni_highlight, zorder = 14
+            )
     
     # Plot the away team's players
     away_frame.plot(
@@ -455,6 +466,15 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             zorder = 20,
             fontdict = {'ha': 'center', 'va': 'center'},
         )
+        
+        if plot_arrows:        
+            ax.arrow(x = player['player_x'],
+                     y = player['player_y'],
+                     dx = 3 * math.cos(player['player_orientation']),
+                     dy = 3 * math.sin(player['player_orientation']),
+                     length_includes_head = True, width = 0.3,
+                     color = away_uni_highlight, zorder = 14
+            )
     
     # Plot the ball
     ball_frame.plot(
@@ -558,95 +578,9 @@ def play_gif(gid = 0, pid = 0, home = '', away = '', prechecked_gid = False,
     return None
 
 if __name__ == '__main__':
-    plot_test_data = pd.read_csv('data/plot_testing.csv')
-    teams_info = load.teams_data()
-    
-    """for i, row in plot_test_data.iterrows():
-        home = row['home']
-        away = row['away']
-        
-        home_frame = pd.DataFrame(
-            row[['home', 'home_x', 'home_y', 'home_jersey_no']]
-        ).transpose()
-        away_frame = pd.DataFrame(
-            row[['away', 'away_x', 'away_y', 'away_jersey_no']]
-        ).transpose()
-        home_info = teams_info[teams_info['team_code'] == home]
-        away_info = teams_info[teams_info['team_code'] == away]
-        
-        fig, ax = field(home = home, away = away)
-        
-        home_frame.plot(
-            x = 'home_x',
-            y = 'home_y',
-            kind = 'scatter',
-            ax = ax,
-            color = home_info['home_uni_base'],
-            s = 800,
-            edgecolor = home_info['home_uni_highlight'],
-            linewidth = 2,
-            zorder = 15
-        )
-        
-        for i, player in home_frame.iterrows():
-            ax.text(
-                x = player['home_x'],
-                y = player['home_y'],
-                s = str(int(player['home_jersey_no'])),
-                fontsize = 15,
-                color = home_info['home_uni_number'].iloc[0],
-                path_effects = [
-                    pe.withStroke(
-                        linewidth = 3,
-                        foreground = f'{home_info.home_uni_number_highlight.iloc[0]}'
-                    )
-                ],
-                fontweight = 'bold',
-                rotation = -90,
-                zorder = 20,
-                fontdict = {'ha': 'center', 'va': 'center'},
-            )
-            
-        away_frame.plot(
-            x = 'away_x',
-            y = 'away_y',
-            kind = 'scatter',
-            ax = ax,
-            color = away_info['away_uni_base'],
-            s = 800,
-            edgecolor = away_info['away_uni_highlight'],
-            linewidth = 2,
-            zorder = 15
-        )
-        
-        for i, player in away_frame.iterrows():
-            ax.text(
-                x = player['away_x'],
-                y = player['away_y'],
-                s = str(int(player['away_jersey_no'])),
-                fontsize = 15,
-                color = home_info['away_uni_number'].iloc[0],
-                path_effects = [
-                    pe.withStroke(
-                        linewidth = 2,
-                        foreground = f'{away_info.away_uni_number_highlight.iloc[0]}'
-                    )
-                ],
-                fontweight = 'bold',
-                rotation = 90,
-                zorder = 20,
-                fontdict = {'ha': 'center', 'va': 'center'},
-            )
-        
-        if not os.path.exists(os.path.join('img', 'test_plots')):
-            os.makedirs(os.path.join('img', 'test_plots'))
-            
-        fname = os.path.join('img', 'test_plots', f'plt_preview_{home}.png')
-        plt.savefig(f'{fname}', bbox_inches = 'tight', pad_inches = 0)"""
-
     gid = 2018121603
     pid = 105
-    frame_no = 1
+    frame_no = 34
     fig, ax = field(gid)
     
     start1 = time.time()
