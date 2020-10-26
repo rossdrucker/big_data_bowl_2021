@@ -1,6 +1,7 @@
 """
 @author: Ross Drucker
 """
+import math
 import warnings
 import numpy as np
 import pandas as pd
@@ -259,6 +260,13 @@ def tracking_data(gid = 0, pid = 0, week = 0, prechecked_gid = False,
         'player_id', 'player_name', 'player_no', 'player_position', 'frame_id',
         'team', 'game_id', 'play_id', 'play_direction', 'route_type'
     ]
+    
+    # Correct the angular variables to be plottable (needs to be in radians)
+    trk['player_orientation'] = np.mod(90 - trk['player_orientation'], 360)
+    trk['player_orientation'] *= math.pi / 180
+    
+    trk['player_direction'] = np.mod(90 - trk['player_direction'], 360)
+    trk['player_direction'] *= math.pi / 180
     
     return trk
 
