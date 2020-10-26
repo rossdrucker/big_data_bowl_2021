@@ -8,6 +8,7 @@ base = os.path.abspath(os.path.dirname(__file__))
 data_dir = os.path.join(base, 'data')
 img_dir = os.path.join(base, 'img')
 helpers_dir = os.path.join(base, 'bdb_helpers')
+gif_dir = os.path.join(img_dir, 'gif')
 
 # File locations
 games_data_file = os.path.join(data_dir, 'games.csv')
