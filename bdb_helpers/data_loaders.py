@@ -144,6 +144,9 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
         'is_defensive_pi'
     ]
     
+    # Get rid of the fraction of seconds in the game clock
+    plays['game_clock'] = plays['game_clock'].str[:-3]
+    
     # Create a pre-play down and distance summary with relevant game info
     plays['down_str'] = plays['down'].astype(str)
     plays.loc[plays['down_str'] == '1', 'down_str'] = '1st'
