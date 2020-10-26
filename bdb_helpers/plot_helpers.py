@@ -540,7 +540,7 @@ def play_gif(gid = 0, pid = 0, home = '', away = '', prechecked_gid = False,
     )
     
     # Make the temporary directory to hold static images
-    file_ops.make_play_img_dir(gid, pid)
+    file_ops.make_gif_temp_dir(gid, pid)
     
     # Make each frame as a static image
     for i in np.arange(1, n_frames + 1):
@@ -565,22 +565,28 @@ def play_gif(gid = 0, pid = 0, home = '', away = '', prechecked_gid = False,
             )
         
         plt.savefig(f'{fname}', bbox_inches = 'tight', pad_inches = 0)
+    
+    try:
+        gif_fname = tracking['down_dist_summary'].values[0] + '.gif'
+    
+    except:
+        gif_fname = str(pid) + '.gif'
         
     # Collect the static images
-    images = file_ops.collect_play_frames(gid, pid)
+    images = file_ops.collect_gif_play_frames(gid, pid)
     
     # Make and save the gif
-    file_ops.make_gif(gid, pid, images)
+    file_ops.make_gif(gid, pid, images, fname = gif_fname)
     
     # Delete the temporary directory that holds all static images.
-    file_ops.remove_static_frame_directory(gid, pid)
+    file_ops.remove_temp_static_frame_directory(gid, pid)
     
     return None
 
 if __name__ == '__main__':
     gid = 2018121603
     pid = 105
-    frame_no = 34
+    frame_no = 33
     fig, ax = field(gid)
     
     start1 = time.time()

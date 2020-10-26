@@ -1,11 +1,13 @@
 """
 @author: Ross Drucker
 """
+import os
 import math
 import warnings
 import numpy as np
 import pandas as pd
 
+import bdb_filepaths as fp
 import bdb_helpers.lookup as find
 import bdb_helpers.coord_ops as coord_ops
 import bdb_helpers.input_checkers as check
@@ -28,23 +30,23 @@ def games_data(gid = 0, prechecked_gid = False):
     """
     if gid == 0 and prechecked_gid == False:
         # Read in all data. All data will be returned
-        games = pd.read_csv('data/games.csv')
+        games = pd.read_csv(fp.games_data_file)
     
     elif gid == 0 and prechecked_gid == True:
         # Read in all data. All data will be returned
-        games = pd.read_csv('data/games.csv')
+        games = pd.read_csv(fp.games_data_file)
     
     elif gid != 0 and prechecked_gid == True:
         # Read in all data, then subset to the game if it exists. If not, alert
         # user that this is not a valid game ID and return 
-        games = pd.read_csv('data/games.csv')
+        games = pd.read_csv(fp.games_data_file)
         if len(games[games['gameId'] == gid]) > 0:
             games = games[games['gameId'] == gid]
         else:
             print(f'{gid} is not a valid game ID. Returning all game data')
     else:
         # Read in only the game data for the pre-checked game ID
-        games = pd.read_csv('data/games.csv')[lambda x: x['gameId'] == gid]
+        games = pd.read_csv(fp.games_data_file)[lambda x: x['gameId'] == gid]
     
     # Rename columns
     games.columns = [
@@ -79,15 +81,15 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
         if pid == 0:
             # If the game ID and play ID are both not provided, read in all
             # plays data
-            plays = pd.read_csv('data/plays.csv')
+            plays = pd.read_csv(fp.plays_data_file)
         
         # If the play ID is provided but is not checked prior to being passed
         # to the function, check to see if the play exists in the plays data
         else:
             if prechecked_pid == False:
                 # Load in all plays with this play ID
-                plays = pd.read_csv('data/plays.csv')[lambda x: \
-                                                      x['playId'] == pid]
+                plays = pd.read_csv(fp.plays_data_file)[lambda x: \
+                                                        x['playId'] == pid]
                 
                 # If the loaded data has records, that's great. If not, load
                 # all plays data for all games and alert user
@@ -95,7 +97,7 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
                     pass
                 
                 else:
-                    plays = pd.read_csv('data/plays.csv')
+                    plays = pd.read_csv(fp.plays_data_file)
                     print(f'Play ID {pid} does not exist. All plays for all '
                            'games will be returned.')
         
@@ -108,27 +110,27 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
             pass
         
         if pid == 0:
-            plays = pd.read_csv('data/plays.csv')[lambda x: \
-                                                  x['gameId'] == gid]
+            plays = pd.read_csv(fp.plays_data_file)[lambda x: \
+                                                    x['gameId'] == gid]
         else:
             if prechecked_pid == False:
-                plays = pd.read_csv('data/plays.csv')[lambda x: \
-                                                      (x['gameId'] == gid) &
-                                                      (x['playId'] == pid)]
+                plays = pd.read_csv(fp.plays_data_file)[lambda x: \
+                                                        (x['gameId'] == gid) &
+                                                        (x['playId'] == pid)]
             
                 # If the play for that game does exist, that's great. If not,
                 # load all plays data for this game and alert user
                 if not plays.empty:
                     pass
                 else:
-                    plays = pd.read_csv('data/plays.csv')[lambda x: \
-                                                          x['gameId'] == gid]
+                    plays = pd.read_csv(fp.plays_data_file)[lambda x: \
+                                                            x['gameId'] == gid]
                     print(f'Play ID {pid} does not exist for game {gid}. All '
                           f'plays for game {gid} will be returned.')
             else:
-                plays = pd.read_csv('data/plays.csv')[lambda x: \
-                                                      (x['gameId'] == gid) &
-                                                      (x['playId'] == pid)]
+                plays = pd.read_csv(fp.plays_data_file)[lambda x: \
+                                                        (x['gameId'] == gid) &
+                                                        (x['playId'] == pid)]
 
     # Rename columns
     plays.columns = [
@@ -197,7 +199,8 @@ def tracking_data(gid = 0, pid = 0, week = 0, prechecked_gid = False,
         trk = pd.DataFrame()
         for week in range(1, 17):
             print(f'Loading week {week}...', end = '\r')
-            this_week = pd.read_csv(f'data/week{week}.csv')
+            week_file = os.path.join(fp.data_dir, f'week{week}.csv')
+            this_week = pd.read_csv(week_file)
             trk = pd.concat([trk, this_week])
     else:
         # If the game ID is provided, but not checked, check the game ID first
@@ -233,25 +236,27 @@ def tracking_data(gid = 0, pid = 0, week = 0, prechecked_gid = False,
         if gid != 0 and pid != 0:
             # If there is a game ID and play ID supplied, load only the
             # tracking information for this play in this game
-            trk = pd.read_csv(f'data/week{week}.csv')[lambda x: \
-                                                      (x['gameId'] == gid) &
-                                                      (x['playId'] == pid)]
+            week_file = os.path.join(fp.data_dir, f'week{week}.csv')
+            trk = pd.read_csv(week_file)[lambda x:
+                                         (x['gameId'] == gid) &
+                                         (x['playId'] == pid)]
         elif gid != 0 and pid == 0:
             # If there is a game ID but not a play ID supplied, load all
             # tracking data from all plays of this game
-            trk = pd.read_csv(f'data/week{week}.csv')[lambda x: \
-                                                      x['gameId'] == gid]
+            week_file = os.path.join(fp.data_dir, f'week{week}.csv')
+            trk = pd.read_csv(week_file)[lambda x: x['gameId'] == gid]
                 
         elif gid == 0 and pid != 0:
             # If there is a play Id but not a game ID supplied, load all
             # tracking data from all plays in the week of this game with a
             # matching play ID
-            trk = pd.read_csv(f'data/week{week}.csv')[lambda x: \
-                                                      (x['playID'] == pid)]
+            week_file = os.path.join(fp.data_dir, f'week{week}.csv')
+            trk = pd.read_csv(week_file)[lambda x: (x['playID'] == pid)]
         else:
             # If there's no game ID or play ID supplied, load all tracking
             # data for the week
-            trk = pd.read_csv(f'data/week{week}.csv')
+            week_file = os.path.join(fp.data_dir, f'week{week}.csv')
+            trk = pd.read_csv(week_file)
     
     # Rename columns
     trk.columns = [
@@ -281,7 +286,7 @@ def teams_data():
         NFC, and the AFC
     """
     # Load in the dataset
-    teams_data = pd.read_csv('data/team_data.csv')
+    teams_data = pd.read_csv(fp.teams_data_file)
     
     return teams_data
 
@@ -295,7 +300,7 @@ def player_data():
         information
     """
     # Load in the original data
-    players = pd.read_csv('data/players.csv')
+    players = pd.read_csv(fp.players_data_file)
     
     # Clean the height of the player to all be in inches
     heights = players['height'].str.split('-', expand = True)

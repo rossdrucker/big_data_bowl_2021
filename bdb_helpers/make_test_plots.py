@@ -6,11 +6,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 
+import bdb_filepaths as fp
 import bdb_helpers.data_loaders as load
 import bdb_helpers.plot_helpers as draw
 
 
-plot_test_data = pd.read_csv('data/plot_testing.csv')
+plot_test_data = pd.read_csv(fp.plot_test_data)
 teams_info = load.teams_data()
 
 for i, row in plot_test_data.iterrows():

@@ -5,9 +5,10 @@ import os
 import shutil
 import imageio
 
+import bdb_filepaths as fp
 import bdb_helpers.lookup as find
 
-def make_play_img_dir(gid, pid):
+def make_gif_temp_dir(gid, pid):
     """
     Make a temporary directory for the static files of a play while making a
     gif
@@ -22,7 +23,7 @@ def make_play_img_dir(gid, pid):
     None.
     """
     # Make the desired path
-    desired_path = os.path.join('img', 'temp', f'{gid}_{pid}')
+    desired_path = os.path.join(fp.img_dir, 'temp', f'{gid}_{pid}')
     
     # Check if the path exists. If not, create one
     if not os.path.exists(desired_path):
@@ -30,7 +31,7 @@ def make_play_img_dir(gid, pid):
     
     return None
 
-def collect_play_frames(gid, pid):
+def collect_gif_play_frames(gid, pid):
     """
     Collects the files needed to make a gif
 
@@ -44,7 +45,7 @@ def collect_play_frames(gid, pid):
     imgs: a list of images ready to be made into a gif
     """
     # Find the desired path with static images
-    desired_path = os.path.join('img', 'temp', f'{gid}_{pid}')
+    desired_path = os.path.join(fp.img_dir, 'temp', f'{gid}_{pid}')
     
     # Go through the directory and select only the .png files for the gif
     files = [file for file in os.listdir(desired_path) if file.endswith('png')]
@@ -58,7 +59,7 @@ def collect_play_frames(gid, pid):
     
     return imgs
 
-def make_gif(gid, pid, images):
+def make_gif(gid, pid, images, fname = ''):
     """
     Make and save the actual gif to the img/gif/{game_id} folder
 
@@ -76,21 +77,33 @@ def make_gif(gid, pid, images):
     home, away = find.game_teams(gid)
     
     # Make the desired saving path
-    output_path = os.path.join('img', 'gif', f'{gid}_{home}_{away}')
+    output_path = os.path.join(fp.gif_dir, f'{gid}_{home}_{away}')
     
     # Check if the folder for this game's gifs already exists. If not, make it
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
-    # Save the gif        
-    imageio.mimwrite(
-        os.path.join(output_path, f'{pid}.gif'),
-        images
-    )
+    # Save the gif
+    if fname == '':
+        fname = f'{pid}.gif'
+        
+    if fname[-4:] != '.gif':
+        fname = f'{fname}.gif'
+        
+    try:  
+        imageio.mimwrite(
+            os.path.join(output_path, fname),
+            images
+        )
+    except:
+        imageio.mimwrite(
+            os.path.join(output_path, f'{pid}.gif'),
+            images
+        )
     
     return None
 
-def remove_static_frame_directory(gid, pid):
+def remove_temp_static_frame_directory(gid, pid):
     """
     Remove the temporary directory with the static files
 
