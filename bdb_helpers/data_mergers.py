@@ -37,6 +37,7 @@ def tracking_and_plays(gid = 0, pid = 0, tracking = pd.DataFrame(),
         # If a game ID is provided but not a play ID, load all tracking for the
         # game
         elif gid != 0 and pid == 0:
+            week = find.game_week(gid)
             tracking = load.tracking_data(gid = gid, week = week)
         
         # If a play ID is provided but not a game ID, load all tracking for
