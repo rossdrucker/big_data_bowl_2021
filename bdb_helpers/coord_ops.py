@@ -1,6 +1,11 @@
 """
 @author: Ross Drucker
 """
+import pandas as pd
+
+import bdb_helpers.data_mergers as merge
+import bdb_helpers.input_checkers as check
+
 def convert_trans(df, start = 'ft', trans = True, x_tran = 60, y_tran = 80/3):
     """
     Convert the units from feet to yards (or feet to yards), and translate
