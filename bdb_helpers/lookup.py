@@ -111,7 +111,8 @@ def game_week(gid):
     
     return week
 
-def line_of_scrimmage(gid, pid):
+def line_of_scrimmage(gid, pid, prechecked_gid = False,
+                      prechecked_pid = False):
     """
     Finds the line of scrimmage for a specified play
 
@@ -119,27 +120,35 @@ def line_of_scrimmage(gid, pid):
     ----------
     gid: an integer of a game_id
     pid: an integer of a play_id
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
     
     Returns
     -------
     los: a float of the absolute yardline of the line of scrimmage
     """
-    # Validate the game ID and play ID
-    gid = check.game_id(gid)
-    pid = check.play_id(gid, pid)
+    if not prechecked_gid:
+        # Validate the game ID
+        gid = check.game_id(gid)
+        prechecked_gid = True
+    
+    if not prechecked_pid:
+        # Validate the play ID
+        pid = check.play_id(gid, pid)
+        prechecked_pid = True
     
     # Load in the plays data
-    plays = load.plays_data()
-    
-    # Find the play's data based on the game ID and play ID
-    play = plays[(plays['game_id'] == gid) & (plays['play_id'] == pid)]
+    play = load.plays_data(gid, pid, prechecked_gid, prechecked_pid)
     
     # Get the line of scrimmage
     los = play['absolute_yard_line'].iloc[0]
     
     return los
 
-def yards_to_go(gid, pid):
+def yards_to_go(gid, pid, prechecked_gid = False,
+                prechecked_pid = False):
     """
     Finds the distance needed (in yards) to achieve a first down
 
@@ -147,28 +156,36 @@ def yards_to_go(gid, pid):
     ----------
     gid: an integer of a game_id
     pid: an integer of a play_id
-
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
+         
     Returns
     -------
     yds_to_go: an integer number of yards needed on a play to achieve
         a first down
     """
-    # Validate the game ID and play ID
-    gid = check.game_id(gid)
-    pid = check.play_id(gid, pid)
+    if not prechecked_gid:
+        # Validate the game ID
+        gid = check.game_id(gid)
+        prechecked_gid = True
+    
+    if not prechecked_pid:
+        # Validate the play ID
+        pid = check.play_id(gid, pid)
+        prechecked_pid = True
     
     # Load in the plays data
-    plays = load.plays_data()
-    
-    # Find the play's data based on the game ID and play ID
-    play = plays[(plays['game_id'] == gid) & (plays['play_id'] == pid)]
+    play = load.plays_data(gid, pid, prechecked_gid, prechecked_pid)
     
     # Get the number of yards needed for a first down
     yds_to_go = play['yds_to_go'].iloc[0]
     
     return yds_to_go
 
-def first_down_line(gid, pid):
+def first_down_line(gid, pid, tracking = pd.DataFrame(),
+                    prechecked_gid = False, prechecked_pid = False):
     """
     Finds what yardline is needed to be gained to achieve a first down
 
@@ -176,18 +193,31 @@ def first_down_line(gid, pid):
     ----------
     gid: an integer of a game_id
     pid: an integer of a play_id
+    tracking: a set of tracking information pertaining to a particular play.
+        If none is provided, the entire tracking set will be used. This is
+        the default
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
 
     Returns
     -------
     first_down_yardline: a float representing the absolute yardline needed
         to achieve a first down
     """
-    # Validate the game ID and play ID
-    gid = check.game_id(gid)
-    pid = check.play_id(gid, pid)
+    if not prechecked_gid:
+        # Validate the game ID
+        gid = check.game_id(gid)
+        prechecked_gid = True
+    
+    if not prechecked_pid:
+        # Validate the play ID
+        pid = check.play_id(gid, pid)
+        prechecked_pid = True
     
     # Load in the schedule data
-    games = load.games_data()
+    games = load.games_data(gid, prechecked_gid)
     
     # Get the week of the game so that the correct tracking information can be
     # loaded
@@ -200,9 +230,15 @@ def first_down_line(gid, pid):
     
     # Load in the appropriate tracking data, then subset to only be for the
     # desired play
-    tracking = load.tracking_data(week)
-    tracking = tracking[tracking['game_id'] == gid]
-    tracking = tracking[tracking['play_id'] == pid]
+    if tracking.empty:
+        tracking = load.tracking_data(
+            gid,
+            pid,
+            week,
+            prechecked_gid = True,
+            prechecked_pid = True,
+            prechecked_week = True
+        )
     
     # Get the direction of play. If the play is going right, yards will be
     # added, otherwise they will be subtracted
@@ -216,7 +252,8 @@ def first_down_line(gid, pid):
         
     return first_down_yardline
         
-def n_frames(gid, pid, tracking = pd.DataFrame()):
+def n_frames(gid, pid, tracking = pd.DataFrame(), prechecked_gid = False,
+             prechecked_pid = False):
     """
     Finds the number of frames recorded for a particular play
 
@@ -227,28 +264,41 @@ def n_frames(gid, pid, tracking = pd.DataFrame()):
     tracking: a set of tracking information pertaining to a particular play.
         If none is provided, the entire tracking set will be used. This is
         the default
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
 
     Returns
     -------
     num_frames: an integer representing how many frames were recorded for the
         play
     """
-    # Validate the game ID and play ID
-    gid = check.game_id(gid)
-    pid = check.play_id(gid, pid)
+    if not prechecked_gid:
+        # Validate the game ID
+        gid = check.game_id(gid)
+        prechecked_gid = True
+    
+    if not prechecked_pid:
+        # Validate the play ID
+        pid = check.play_id(gid, pid)
+        prechecked_pid = True
     
     # If no tracking information is provided, load the tracking information
     # for the week containing the desired play
     if tracking.empty:
         week = game_week(gid)
-        tracking = load.tracking_data(week)
-    
-    # Subset the tracking data down to the desired play
-    game_plays = tracking[tracking['game_id'] == gid]
-    play = game_plays[game_plays['play_id'] == pid]
+        tracking = load.tracking_data(
+            gid,
+            pid,
+            week,
+            prechecked_gid,
+            prechecked_pid,
+            prechecked_week = True
+        )
     
     # Get the last frame of the play
-    num_frames = play['frame_id'].max()
+    num_frames = tracking['frame_id'].max()
     
     return num_frames
 

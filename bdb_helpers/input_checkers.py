@@ -129,7 +129,7 @@ def game_id(gid):
     
     return gid
 
-def play_id(gid, pid):
+def play_id(gid, pid, prechecked_gid = False):
     """
     Checks a play ID exists in the provided dataset. Will prompt until
     a valid play ID is provided
@@ -138,13 +138,16 @@ def play_id(gid, pid):
     ----------
     gid: an integer of a game_id
     pid: an integer of a play_id
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
 
     Returns
     -------
     pid: a validated integer of a play_id
     """
-    # Check to make sure the game ID supplied is valid
-    gid = game_id(gid)
+    if not prechecked_gid:
+        # Check to make sure the game ID supplied is valid
+        gid = game_id(gid)
     
     # Load the plays data and get all plays from the supplied game
     plays = load.plays_data(gid, prechecked_gid = True)
@@ -168,7 +171,8 @@ def play_id(gid, pid):
     
     return pid
 
-def frame_no(gid, pid, frame, tracking = pd.DataFrame()):
+def frame_no(gid, pid, frame, tracking = pd.DataFrame(),
+             prechecked_gid = False, prechecked_pid = False):
     """
     Checks that a frame exists for a particular play
 
@@ -178,29 +182,45 @@ def frame_no(gid, pid, frame, tracking = pd.DataFrame()):
     pid: an integer of a play_id
     frame: an integer of a frame within a play to check
     tracking: a dataframe of tracking information
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
 
     Returns
     -------
     frame: a validated frame within the play
     """
-    # Validate the game ID
-    gid = game_id(gid)
+    if not prechecked_gid:
+        # Validate the game ID
+        gid = game_id(gid)
+        prechecked_gid = True
     
     # Find the week number of the game so that the proper tracking information
     # may be provided
     week = find.game_week(gid)
     
-    # Validate the play ID
-    pid = play_id(gid, pid)
+    if not prechecked_pid:
+        # Validate the play ID
+        pid = play_id(gid, pid)
+        prechecked_pid = True
     
     # If no tracking data is supplied, load in the tracking data for the proper
     # week
     if tracking.empty:
-        tracking = load.tracking_data(week)
+        tracking = load.tracking_data(
+            gid,
+            pid,
+            week,
+            prechecked_gid,
+            prechecked_pid,
+            prechecked_week = True
+        )
     
-    # Subset to the correct play
-    game_plays = tracking[tracking['game_id'] == gid]
-    play = game_plays[game_plays['play_id'] == pid]
+    else:
+        # Subset to the correct play
+        game_plays = tracking[tracking['game_id'] == gid]
+        play = game_plays[game_plays['play_id'] == pid]
     
     # Make a list of all viable frame IDs
     valid_frames = play['frame_id'].unique().tolist()
@@ -218,7 +238,7 @@ def frame_no(gid, pid, frame, tracking = pd.DataFrame()):
                   f'and {max(valid_frames)}')
             frame = int(input('Frame ID:\n'))
     
-    return frame, tracking
+    return frame
 
 if __name__ == '__main__':
     valid_team = team_code('chi')

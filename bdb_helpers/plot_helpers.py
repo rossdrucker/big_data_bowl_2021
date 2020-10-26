@@ -10,10 +10,77 @@ import matplotlib.patheffects as pe
 
 import bdb_helpers.lookup as find
 import bdb_helpers.data_loaders as load
+import bdb_helpers.data_mergers as merge
 import bdb_helpers.input_checkers as check
 import bdb_helpers.file_movers as file_ops
 
 warnings.filterwarnings('ignore')
+
+import time
+
+def orient_jersey_num(gid, pid, prechecked_gid = False, prechecked_pid = False,
+                tracking = pd.DataFrame()):
+    """
+    Manipulate the tracking data to get the correct orientation for the jersey
+    numbers of players involved in the play that will be plotted
+
+    Parameters
+    ----------
+    gid: an integer of a game_id
+    pid: an integer of a play_id
+    prechecked_gid: a boolean of whether or not the game ID has been checked
+        before being passed to the function
+    prechecked_pid: a boolean of whether or not the play ID has been checked
+         before being passed to the function
+    tracking: a dataframe of tracking data that can be used to speed up
+        data loading
+
+    Returns
+    -------
+    tracking: a dataframe of tracking data with the proper orientation for the
+        jersey numbers of the players involved
+    """
+    # If the game ID is not already checked, check that first
+    if not prechecked_gid:
+        gid = check.game_id(gid)
+        prechecked_gid = True
+    
+    # Now that the game ID is checked, move to the play ID. If that is not
+    # already checked, check that next. prechecked_gid is now True regardless
+    # of its initially passed value since the game ID has been checked in the
+    # first if statement
+    if not prechecked_pid:
+        pid = check.play_id(gid, pid, prechecked_gid)
+    
+    # Now that the game ID and play ID have been checked, load the tracking
+    # data for the play in the provided game. This will load all tracking data
+    # for the play. It will 
+    if tracking.empty:
+        tracking = merge.tracking_and_plays(gid, pid)
+    
+    tracking.loc[tracking['team'] == 'football', 'jersey_num_orient'] = 0
+    
+    tracking.loc[
+        (tracking['team'] == 'home') & (tracking['play_direction'] == 'right'),
+        'jersey_num_orient'
+    ] = -90
+    
+    tracking.loc[
+        (tracking['team'] == 'away') & (tracking['play_direction'] == 'right'),
+        'jersey_num_orient'
+    ] = 90
+    
+    tracking.loc[
+        (tracking['team'] == 'home') & (tracking['play_direction'] == 'left'),
+        'jersey_num_orient'
+    ] = 90
+    
+    tracking.loc[
+        (tracking['team'] == 'away') & (tracking['play_direction'] == 'left'),
+        'jersey_num_orient'
+    ] = -90
+    
+    return tracking['jersey_num_orient']
 
 def field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
           zero = 'l'):
@@ -184,9 +251,9 @@ def field(gid = 0, home = 'nfl', away = '', show = False, unit = 'yd',
         return fig, ax
     
 def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
-                    plot_los = True, plot_first_down_marker = True,
-                    ignore_frame_validation = False, tracking = pd.DataFrame(),
-                    plays = pd.DataFrame()):
+               plot_los = True, plot_first_down_marker = True,
+               prechecked_gid = False, prechecked_pid = False,
+               prechecked_frame = False, tracking = pd.DataFrame()):
     """
     Draw a frame of a given play. Teams are either supplied via the home and
     away arguments, or by looking them up from the game_id provided by the gid
@@ -205,24 +272,25 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
         plot
     plot_first_down_marker: a boolean of whether or not to plot the first
         down line on the plot
-    ignore_frame_validation: a boolean indicating whether or not it's okay to
+    prechecked_frame: a boolean indicating whether or not it's okay to
         skip the frame validation. Defaulting to False, but should be set to
         True when using the draw_play_gif() function
     tracking: a dataframe of tracking data that can be used to speed up
         plotting
-        
 
     Returns
     -------
     fig, ax: the figure and axes objects (respectively)
-    play: the tracking data relevant for the play
     """
-    # If a game ID is provided, get the home and away team from the provided
-    # game ID
     if gid != 0:
-        gid = check.game_id(gid)
-        home, away = find.game_teams(gid)
+        # Start by checking the game ID if it is provided but not yet checked
+        if not prechecked_gid:
+            gid = check.game_id(gid)
+            prechecked_gid = True
         
+        # Get the home and away teams for the game
+        home, away = find.game_teams(gid)
+    
     # If no game ID provided, and the home team is 'NFL', set home and away
     # to NFC and AFC respectively. Otherwise, check to make sure the teams are
     # legit
@@ -236,27 +304,42 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             home = check.team_code(home)
             away = check.team_code(away)
             gid = find.game_id(home, away)
+        
+    # Next, check the play ID if it has not already been checked
+    if not prechecked_pid:
+        pid = check.play_id(gid, pid, prechecked_gid)
+        prechecked_pid = True
     
+    # If tracking isn't supplied, load all relevant tracking data
     if tracking.empty:
-        week = find.game_week(gid)
-        tracking = load.tracking_data(week)
+        tracking = merge.tracking_and_plays(gid, pid)
         
-    if not ignore_frame_validation:
-        frame_no, tracking = check.frame_no(gid, pid, frame_no, tracking)
+    if not prechecked_frame:
+        frame_no = check.frame_no(gid, pid, frame_no, tracking)
     
-    game_plays = tracking[tracking['game_id'] == gid]
-    play = game_plays[game_plays['play_id'] == pid]
-        
-    home_frame = play[
-        (play['team'] == 'home') & (play['frame_id'] == frame_no)
+    # Start prepping the data for the plot. Primarily, the jersey numbers'
+    # rotation angle based on team and play direction
+    tracking['jersey_num_orientation'] = orient_jersey_num(
+        gid,
+        pid,
+        prechecked_gid,
+        prechecked_pid,
+        tracking
+    )
+    
+    # Split the frame's data into the home team, the away team, and the ball's
+    # data (respectively)
+    home_frame = tracking[
+        (tracking['team'] == 'home') & (tracking['frame_id'] == frame_no)
     ]
-    away_frame = play[
-        (play['team'] == 'away') & (play['frame_id'] == frame_no)
+    away_frame = tracking[
+        (tracking['team'] == 'away') & (tracking['frame_id'] == frame_no)
     ]
-    ball_frame = play[
-        (play['team'] == 'football') & (play['frame_id'] == frame_no)
+    ball_frame = tracking[
+        (tracking['team'] == 'football') & (tracking['frame_id'] == frame_no)
     ]
     
+    # Get the hex color information about each team to use to make the plot
     teams_info = load.teams_data()
     home_info = teams_info[teams_info['team_code'] == home]
     away_info = teams_info[teams_info['team_code'] == away]
@@ -271,6 +354,7 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
     away_uni_number = away_info['away_uni_number'].iloc[0]
     away_uni_number_highlight = away_info['away_uni_number_highlight'].iloc[0]
     
+    # If the line of scrimmage is to be plotted, determine its position
     if plot_los:
         los = find.line_of_scrimmage(gid, pid)
         los = pd.DataFrame({
@@ -282,9 +366,17 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             ],
             'y': [1/9, 1/9, 53 + (2/9), 53 + (2/9), 1/9]
         })
-        
+    
+    # If the first down line is to be plotted, determine its position
     if plot_first_down_marker:
-        first_down = find.first_down_line(gid, pid)
+        first_down = find.first_down_line(
+            gid,
+            pid,
+            tracking,
+            prechecked_gid,
+            prechecked_pid
+        )
+        
         first_down_line = pd.DataFrame({
             'x': [first_down - (2/12),
                   first_down + (2/12),
@@ -294,9 +386,11 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
             ],
             'y': [1/9, 1/9, 53 + (2/9), 53 + (2/9), 1/9]
         })
-        
+    
+    # Draw the field
     fig, ax = field(gid)
     
+    # Plot the home team's players
     home_frame.plot(
         x = 'player_x',
         y = 'player_y',
@@ -309,6 +403,7 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
         zorder = 15
     )
     
+    # Add the jersey numbers for the home team
     for i, player in home_frame.iterrows():
         ax.text(
             x = player['player_x'],
@@ -323,11 +418,12 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
                 )
             ],
             fontweight = 'bold',
-            rotation = -90,
+            rotation = player['jersey_num_orientation'],
             zorder = 20,
             fontdict = {'ha': 'center', 'va': 'center'},
         )
-        
+    
+    # Plot the away team's players
     away_frame.plot(
         'player_x',
         'player_y',
@@ -340,6 +436,7 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
         zorder = 15
     )
     
+    # Add the jersey numbers for the away team
     for i, player in away_frame.iterrows():
         ax.text(
             x = player['player_x'],
@@ -354,11 +451,12 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
                 )
             ],
             fontweight = 'bold',
-            rotation = 90,
+            rotation = player['jersey_num_orientation'],
             zorder = 20,
             fontdict = {'ha': 'center', 'va': 'center'},
         )
     
+    # Plot the ball
     ball_frame.plot(
         'player_x',
         'player_y',
@@ -374,16 +472,21 @@ def play_frame(gid = 0, pid = 0, home = '', away = '', frame_no = 0,
     ax.fill(los['x'], los['y'], '#183ec1')
     ax.fill(first_down_line['x'], first_down_line['y'], '#ffcb05')
     
-    return fig, ax, play
+    return fig, ax
 
-def play_gif(gid = 0, pid = 0, home = '', away = '',
-                  tracking = pd.DataFrame()):
+def play_gif(gid = 0, pid = 0, home = '', away = '', prechecked_gid = False,
+             prechecked_pid = False, tracking = pd.DataFrame()):
     # If a game ID is provided, get the home and away team from the provided
     # game ID
     if gid != 0:
-        gid = check.game_id(gid)
-        home, away = find.game_teams(gid)
+        # Start by checking the game ID if it is provided but not yet checked
+        if not prechecked_gid:
+            gid = check.game_id(gid)
+            prechecked_gid = True
         
+        # Get the home and away teams for the game
+        home, away = find.game_teams(gid)
+    
     # If no game ID provided, and the home team is 'NFL', set home and away
     # to NFC and AFC respectively. Otherwise, check to make sure the teams are
     # legit
@@ -397,21 +500,39 @@ def play_gif(gid = 0, pid = 0, home = '', away = '',
             home = check.team_code(home)
             away = check.team_code(away)
             gid = find.game_id(home, away)
+        
+    # Next, check the play ID if it has not already been checked
+    if not prechecked_pid:
+        pid = check.play_id(gid, pid, prechecked_gid)
+        prechecked_pid = True
     
-    n_frames = find.n_frames(gid, pid, tracking)
+    # If tracking isn't supplied, load all relevant tracking data
+    if tracking.empty:
+        tracking = merge.tracking_and_plays(gid, pid)
     
+    # Get the number of frames in the play
+    n_frames = find.n_frames(
+        gid = gid,
+        pid = pid,
+        tracking = tracking,
+        prechecked_gid = True,
+        prechecked_pid = True
+    )
+    
+    # Make the temporary directory to hold static images
     file_ops.make_play_img_dir(gid, pid)
     
     # Make each frame as a static image
     for i in np.arange(1, n_frames + 1):
         print(f'Processing frame {i} of {n_frames}')
-        fig, ax, tracking = play_frame(
+        fig, ax = play_frame(
             gid,
-            pid, 
+            pid,
             frame_no = i,
+            prechecked_gid = True,
+            prechecked_pid = True,
             tracking = tracking,
-            ignore_frame_validation = True # Can be safely ignored here since
-            # the frame number is already validated
+            prechecked_frame = True
         )
         
         if i < 10:
@@ -440,7 +561,7 @@ if __name__ == '__main__':
     plot_test_data = pd.read_csv('data/plot_testing.csv')
     teams_info = load.teams_data()
     
-    for i, row in plot_test_data.iterrows():
+    """for i, row in plot_test_data.iterrows():
         home = row['home']
         away = row['away']
         
@@ -521,13 +642,34 @@ if __name__ == '__main__':
             os.makedirs(os.path.join('img', 'test_plots'))
             
         fname = os.path.join('img', 'test_plots', f'plt_preview_{home}.png')
-        plt.savefig(f'{fname}', bbox_inches = 'tight', pad_inches = 0)
-
+        plt.savefig(f'{fname}', bbox_inches = 'tight', pad_inches = 0)"""
 
     gid = 2018121603
     pid = 105
     frame_no = 1
     fig, ax = field(gid)
-    fig, ax, tracking = play_frame(gid, pid, frame_no = frame_no)
-    play_gif(gid, pid, tracking)
+    
+    start1 = time.time()
+    fig, ax = play_frame(gid, pid, frame_no = frame_no)
+    end1 = time.time()
+    
+    tracking = merge.tracking_and_plays(gid, pid)
+    start2 = time.time()
+    fig, ax = play_frame(gid, pid, frame_no = frame_no, tracking = tracking)
+    end2 = time.time()
+    
+    print(f'Method 1 took {round(end1 - start1, 3)} seconds')
+    print(f'Method 2 took {round(end2 - start2, 3)} seconds')
+    
+    start3 = time.time()
+    play_gif(gid, pid)
+    end3 = time.time()
+    
+    start4 = time.time()
+    play_gif(gid, pid, tracking = tracking)
+    end4 = time.time()
+    
+    print(f'Method 1 took {round(end3 - start3, 3)} seconds')
+    print(f'Method 2 took {round(end4 - start4, 3)} seconds')
+    
     
