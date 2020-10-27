@@ -99,6 +99,11 @@ def game_id(gid):
     game_id_valid = False
     
     while not game_id_valid:
+        if type(gid) != int:
+            try:
+                gid = int(gid)
+            except:
+                pass
         # If the game ID is a valid game ID, break out of the loop
         if gid in valid_game_ids:
             game_id_valid = True
@@ -156,13 +161,18 @@ def play_id(gid, pid, prechecked_gid = False):
     play_id_valid = False
     
     while not play_id_valid:
+        if type(pid) != int:
+            try:
+                pid = int(pid)
+            except:
+                pass
         # If the play is a valid play in the game, break out of the loop
         if pid in valid_plays:
             play_id_valid = True
         
         # Otherwise, force the player to select a new play
         else:
-            print(f'{play_id} is not a valid play ID in this game. Please '
+            print(f'{pid} is not a valid play ID in this game. Please '
                   'select a play from the following list:\n')
             for i, play in plays.iterrows():
                 print(f'{play.play_id} -- {play.down_dist_summary}')
