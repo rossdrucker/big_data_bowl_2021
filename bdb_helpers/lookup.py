@@ -111,6 +111,89 @@ def game_week(gid):
     
     return week
 
+def play_id(gid = 0, home = '', away = '', play_info = {}, single_play = True,
+            prechecked_gid = False):
+    """
+    Finds the play ID of a particular play
+
+    Parameters
+    ----------
+    gid: an integer of a game_id
+    home: a string representing the home team's team code
+    away: a string representing the away team's team code
+    play_info: a dictionary of parameters to use for subsetting. The keys MUST
+        be columns in the plays data to be used. If not, they will be ignored
+    prechecked_gid: a boolean of whether or not the game ID has been prechecked
+
+    Returns
+    -------
+    pid: an integer of a play_id
+    """
+    # Game ID should be the primary lookup tool, so start with loading the
+    # game's data if this is passed
+    if gid != 0:
+        # If the game ID is not already checked, check the game ID first
+        if not prechecked_gid:
+            gid = check.game_id(gid)
+            prechecked_gid = True
+    
+    # If the game ID is not passed, then try to get a game ID based on the home
+    # and away team. If this yields nothing, then load all games
+    if home != '' or away != '':
+        home = check.team_code(home)
+        away = check.team_code(away)
+        
+        gid = game_id(home, away)
+        prechecked_gid = True
+    
+    # Load in plays from the identified game, or 
+    plays_from_game = load.plays_data(
+        gid = gid,
+        prechecked_gid = prechecked_gid
+    )
+    
+    # Subset by the information about the play in the parameter play_info
+    if bool(play_info):
+        for key, val in play_info.items():
+            # If the desired parameter is not in the columns of the plays data,
+            # alert user and skip this subsetting parameter
+            if key not in plays_from_game.columns:
+                print(f'{key} is not a valid column to use for subsetting as'
+                      ' it does not appear in the dataset.')
+                continue
+            
+            # If the value passed in the plays_info dictionary is a list, use
+            # the .isin() method for subsetting
+            if type(val) == list:
+                plays_from_game = plays_from_game[
+                    plays_from_game[f'{key}'].isin(val)
+                ]
+                
+            # Otherwise, use the key and value alone
+            else:
+                plays_from_game = plays_from_game[
+                    plays_from_game[f'{key}'] == val
+                ]
+    
+    # If the passed parameters are enough to identify the play, there
+    # should only be one play ID remaining. Return this value
+    if len(plays_from_game) == 1:
+        pid = plays_from_game['play_id'].values[0]
+        
+    else:
+        for i, play in plays_from_game.iterrows():
+            print(f'{play.game_id} -- {play.play_id} -- '
+                  f'{play.down_dist_summary}')
+        
+        gid = input('Which game ID were you looking for?\nGame ID: ')
+        pid = input('Which play of the above are you looking for?\nPlay ID: ')
+        
+        gid = check.game_id(gid)
+        prechecked_gid = True
+        pid = check.play_id(gid, pid, prechecked_gid)
+    
+    return pid
+
 def line_of_scrimmage(gid, pid, prechecked_gid = False,
                       prechecked_pid = False):
     """
@@ -306,6 +389,15 @@ if __name__ == '__main__':
     gid = game_id('CHI', 'GB')
     home_team, away_team = game_teams(gid)
     game_week = game_week(gid)
-    los = line_of_scrimmage(gid, 105)
-    yds = yards_to_go(gid, 105)
-    dn1 = first_down_line(gid, 105)
+    pid = play_id(
+        gid,
+        play_info = {
+            'quarter': 1,
+            'possession_team': 'CHI',
+            'down': 2,
+            'yds_to_go': 10,
+            'pass_result': 'COMPLETE',
+        })
+    los = line_of_scrimmage(gid, pid)
+    yds = yards_to_go(gid, pid)
+    dn1 = first_down_line(gid, pid)
