@@ -160,6 +160,18 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
         ' - ' + plays['down_str'] + ' & ' + plays['yds_to_go'].astype(str) + \
         ' from ' + plays['yardline_side'] + ' ' + \
         plays['yardline_number'].astype(str)
+        
+    # Remove the 'play_type_' prefix from all play_type records, leaving only
+    # 'pass', 'sack', 'unknown' as play type
+    plays['play_type'] = plays['play_type'].str.replace('play_type_', '')
+    
+    # Change coding of pass_result column
+    plays.loc[plays['pass_result'] == 'C', 'pass_result'] = 'COMPLETE'
+    plays.loc[plays['pass_result'] == 'I', 'pass_result'] = 'INCOMPLETE'
+    plays.loc[plays['pass_result'] == 'S', 'pass_result'] = 'SACK'
+    plays.loc[plays['pass_result'] == 'IN', 'pass_result'] = 'INTERCEPTION'
+    plays.loc[plays['pass_result'] == 'R', 'pass_result'] = 'REPLAYED DOWN'
+    plays.loc[plays['pass_result'].isna(), 'pass_result'] = None
     
     # Keep only the necessary columns
     plays = plays [[
