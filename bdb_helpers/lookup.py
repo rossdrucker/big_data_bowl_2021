@@ -1,7 +1,6 @@
 """
 @author: Ross Drucker
 """
-import numpy as np
 import pandas as pd
 
 import bdb_helpers.data_loaders as load
