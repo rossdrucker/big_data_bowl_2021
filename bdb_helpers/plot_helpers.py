@@ -557,11 +557,15 @@ def play_gif(gid = 0, pid = 0, home = '', away = '', prechecked_gid = False,
         
         if i < 10:
             fname = os.path.join(
-                'img', 'temp', f'{gid}_{pid}', f'{gid}_{pid}_0{i}.png'
+                'img', 'temp', f'{gid}_{pid}', f'{gid}_{pid}_000{i}.png'
+            )
+        elif i < 100:
+            fname = os.path.join(
+                'img', 'temp', f'{gid}_{pid}', f'{gid}_{pid}_00{i}.png'
             )
         else:
             fname = os.path.join(
-                'img', 'temp', f'{gid}_{pid}', f'{gid}_{pid}_{i}.png'
+                'img', 'temp', f'{gid}_{pid}', f'{gid}_{pid}_0{i}.png'
             )
         
         plt.savefig(f'{fname}', bbox_inches = 'tight', pad_inches = 0)
@@ -612,4 +616,6 @@ if __name__ == '__main__':
     print(f'Method 1 took {round(end3 - start3, 3)} seconds')
     print(f'Method 2 took {round(end4 - start4, 3)} seconds')
     
+    gid = 2018123006
+    pid = 2265
     
