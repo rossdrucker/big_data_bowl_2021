@@ -131,7 +131,7 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
                 plays = pd.read_csv(fp.plays_data_file)[lambda x: \
                                                         (x['gameId'] == gid) &
                                                         (x['playId'] == pid)]
-
+                    
     # Rename columns
     plays.columns = [
         'game_id', 'play_id', 'play_description', 'quarter', 'down',
@@ -170,7 +170,7 @@ def plays_data(gid = 0, pid = 0, prechecked_gid = False,
     plays.loc[plays['pass_result'] == 'I', 'pass_result'] = 'INCOMPLETE'
     plays.loc[plays['pass_result'] == 'S', 'pass_result'] = 'SACK'
     plays.loc[plays['pass_result'] == 'IN', 'pass_result'] = 'INTERCEPTION'
-    plays.loc[plays['pass_result'] == 'R', 'pass_result'] = 'REPLAYED DOWN'
+    plays.loc[plays['pass_result'] == 'R', 'pass_result'] = 'SCRAMBLE'
     plays.loc[plays['pass_result'].isna(), 'pass_result'] = None
     
     # Keep only the necessary columns
