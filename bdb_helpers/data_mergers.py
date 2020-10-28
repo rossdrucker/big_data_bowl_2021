@@ -26,7 +26,6 @@ def tracking_and_plays(gid = 0, pid = 0, tracking = pd.DataFrame(),
     -------
     tracking_and_plays: a merged dataframe of tracking and play-level data
     """
-    
     # If no tracking data is provided...
     if tracking.empty:
         
@@ -80,6 +79,24 @@ def tracking_and_plays(gid = 0, pid = 0, tracking = pd.DataFrame(),
         right = play,
         how = 'inner', 
         on = ['game_id', 'play_id']
+    )
+    
+    games_data = load.games_data()[['game_id', 'home', 'away', 'week']]
+    
+    tracking_and_plays = pd.merge(
+        left = tracking_and_plays,
+        right = games_data,
+        how = 'inner',
+        on = 'game_id'
+    )
+    
+    tracking_and_plays['offensive_team'] = \
+        tracking_and_plays['possession_team']
+        
+    tracking_and_plays['defensive_team'] = np.where(
+        tracking_and_plays['offensive_team'] == tracking_and_plays['home'],
+        tracking_and_plays['away'],
+        tracking_and_plays['home']
     )
         
     return tracking_and_plays
