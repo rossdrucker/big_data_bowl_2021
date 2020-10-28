@@ -1,10 +1,12 @@
 """
 @author: Ross Drucker
 """
+import numpy as np
 import pandas as pd
 
 import bdb_helpers.lookup as find
 import bdb_helpers.data_loaders as load
+import bdb_helpers.input_checkers as check
 
 def tracking_and_plays(gid = 0, pid = 0, tracking = pd.DataFrame(),
                        play = pd.DataFrame()):
@@ -81,6 +83,79 @@ def tracking_and_plays(gid = 0, pid = 0, tracking = pd.DataFrame(),
     )
         
     return tracking_and_plays
+
+def plays_and_games(gid = 0, home = '', away = '', prechecked_gid = False):
+    """
+    Merges play and game data together to better illustrate what plays are
+    being run by which team and against which opponent
+
+    Parameters
+    ----------
+    gid: an integer of a game_id
+    home: a string representing the home team's team code
+    away: a string representing the away team's team code
+    play_info: a dictionary of parameters to use for subsetting. The keys MUST
+        be columns in the plays data to be used. If not, they will be ignored
+    prechecked_gid: a boolean of whether or not the game ID has been prechecked
+
+    Returns
+    -------
+    plays_from_game: a merged dataframe of play and game data
+
+    """
+    if gid != 0:
+        # If the game ID is not already checked, check the game ID first
+        if not prechecked_gid:
+            gid = check.game_id(gid)
+            prechecked_gid = True
+    
+    # If the game ID is not passed, then try to get a game ID based on the home
+    # and away team. If this yields nothing, then load all games
+    if home != '' or away != '':
+        home = check.team_code(home)
+        away = check.team_code(away)
+        
+        gid = find.game_id(home, away)
+        prechecked_gid = True
+        
+    # Load in plays from the identified game, or from all games if game ID = 0
+    plays_from_game = load.plays_data(
+        gid = gid,
+        prechecked_gid = prechecked_gid
+    )
+    
+    # Load in the games data to merge
+    games_data = load.games_data(gid, prechecked_gid)[[
+        'game_id', 'home', 'away', 'week'
+    ]]
+    
+    plays_from_game = pd.merge(
+        left = plays_from_game,
+        right = games_data,
+        how = 'inner',
+        on = 'game_id'
+    )
+    
+    plays_from_game['offensive_team'] = plays_from_game['possession_team']
+    plays_from_game['defensive_team'] = np.where(
+        plays_from_game['offensive_team'] == plays_from_game['home'],
+        plays_from_game['away'],
+        plays_from_game['home']
+    )
+    
+    plays_from_game = plays_from_game[[
+        'game_id', 'play_id', 'play_description', 'quarter', 'down',
+        'yds_to_go', 'possession_team', 'play_type', 'yardline_side',
+        'yardline_number', 'offense_formation', 'personnel_offense',
+        'defenders_in_box', 'n_pass_rushers', 'personnel_defense',
+        'type_dropback', 'presnap_away_score', 'presnap_home_score',
+        'game_clock', 'absolute_yard_line', 'penalty_code', 'penalty_player',
+        'pass_result', 'offensive_play_result', 'play_result', 'epa',
+        'is_defensive_pi', 'down_dist_summary', 'home', 'away',
+        'offensive_team', 'defensive_team', 'week'
+    ]]
+    
+    return plays_from_game
 
 if __name__ == '__main__':
     gid = 2018121603
