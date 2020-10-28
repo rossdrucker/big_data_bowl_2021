@@ -1,9 +1,11 @@
 """
 @author: Ross Drucker
 """
+import numpy as np
 import pandas as pd
 
 import bdb_helpers.data_loaders as load
+import bdb_helpers.data_mergers as merge
 import bdb_helpers.input_checkers as check
 
 def game_id(home, away):
@@ -111,7 +113,7 @@ def game_week(gid):
     
     return week
 
-def play_id(gid = 0, home = '', away = '', play_info = {}, single_play = True,
+def play_id(gid = 0, home = '', away = '', play_info = {},
             prechecked_gid = False):
     """
     Finds the play ID of a particular play
@@ -146,7 +148,7 @@ def play_id(gid = 0, home = '', away = '', play_info = {}, single_play = True,
         gid = game_id(home, away)
         prechecked_gid = True
     
-    # Load in plays from the identified game, or 
+    # Load in plays from the identified game, or from all games if game ID = 0
     plays_from_game = load.plays_data(
         gid = gid,
         prechecked_gid = prechecked_gid
@@ -385,6 +387,92 @@ def n_frames(gid, pid, tracking = pd.DataFrame(), prechecked_gid = False,
     
     return num_frames
 
+def plays_matching(gid = 0, home = '', away = '', play_info = {},
+                   prechecked_gid = False):
+    """
+    
+
+    Parameters
+    ----------
+    gid: an integer of a game_id
+    home: a string representing the home team's team code
+    away: a string representing the away team's team code
+    play_info: a dictionary of parameters to use for subsetting. The keys MUST
+        be columns in the plays data to be used. If not, they will be ignored
+    prechecked_gid: a boolean of whether or not the game ID has been prechecked
+
+    Returns
+    -------
+    plays_from_game: a dataframe of plays that match the passed criteria
+    """
+    # Game ID should be the primary lookup tool, so start with loading the
+    # game's data if this is passed
+    if gid != 0:
+        # If the game ID is not already checked, check the game ID first
+        if not prechecked_gid:
+            gid = check.game_id(gid)
+            prechecked_gid = True
+    
+    # If the game ID is not passed, then try to get a game ID based on the home
+    # and away team. If this yields nothing, then load all games
+    if home != '' or away != '':
+        home = check.team_code(home)
+        away = check.team_code(away)
+        
+        gid = game_id(home, away)
+        prechecked_gid = True
+    
+    # Load in plays data
+    plays_from_game = merge.plays_and_games(gid, home, away, prechecked_gid)
+    
+    # Subset by the information about the play in the parameter play_info
+    if bool(play_info):
+        # Fix all strings to be upper case
+        if 'offensive_team' in play_info.keys():
+            play_info['offensive_team'] = play_info['offensive_team'].upper()
+        
+        if 'defensive_team' in play_info.keys():
+            play_info['defensive_team'] = play_info['defensive_team'].upper()
+        
+        if 'possession_team' in play_info.keys():
+            play_info['possession_team'] = play_info['possession_team'].upper()
+        
+        if 'home' in play_info.keys():
+            play_info['home'] = play_info['home'].upper()
+        
+        if 'away' in play_info.keys():
+            play_info['away'] = play_info['away'].upper()
+            
+        if 'pass_result' in play_info.keys():
+            play_info['pass_result'] = play_info['pass_result'].upper()
+        
+        if 'type_dropback' in play_info.keys():
+            play_info['type_dropback'] = play_info['type_dropback'].upper()
+        
+        for key, val in play_info.items():
+            # If the desired parameter is not in the columns of the plays data,
+            # alert user and skip this subsetting parameter
+            if key not in plays_from_game.columns:
+                print(f'{key} is not a valid column to use for subsetting as'
+                      ' it does not appear in the dataset.')
+                continue
+            
+            # If the value passed in the plays_info dictionary is a list, use
+            # the .isin() method for subsetting
+            if type(val) == list:
+                plays_from_game = plays_from_game[
+                    plays_from_game[f'{key}'].isin(val)
+                ]
+                
+            # Otherwise, use the key and value alone
+            else:
+                plays_from_game = plays_from_game[
+                    plays_from_game[f'{key}'] == val
+                ]
+                
+    # Return all plays that match the criteria
+    return plays_from_game
+
 if __name__ == '__main__':
     gid = game_id('CHI', 'GB')
     home_team, away_team = game_teams(gid)
@@ -397,7 +485,15 @@ if __name__ == '__main__':
             'down': 2,
             'yds_to_go': 10,
             'pass_result': 'COMPLETE',
-        })
+        }
+    )
     los = line_of_scrimmage(gid, pid)
     yds = yards_to_go(gid, pid)
     dn1 = first_down_line(gid, pid)
+    bears_3rd_downs_wk1_thru_5 = plays_matching(
+        play_info = {
+            'week': [1, 2, 3, 4, 5],
+            'offensive_team': 'CHI',
+            'down': 3
+        }
+    )
