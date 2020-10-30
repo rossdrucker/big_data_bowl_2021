@@ -35,7 +35,7 @@ This directory houses the code to load, transform, plot, and analyze the data pr
 ## Directory Layout
 ```
 big_data_bowl
-├── bdb_helpers/                
+├── bdb_helpers/                # Helper functions to make analysis and play location easier
 │   ├── coord_ops.py            # Functions to manipulate and transform coordinates
 │   ├── data_loaders.py         # Functions to load the datasets
 │   ├── data_mergers.py         # Functions to merge datasets together
@@ -45,14 +45,34 @@ big_data_bowl
 │   ├── make_test_plots.py      # Functions to test the plotting capabilities in plot_helpers.py
 │   ├── plot_helpers.py         # Functions to make plots for the analyses
 │   ├── scrape_team_logos.py    # Scrape logos from ESPN's website
-├── img/
+├── img/                        # Direcotry to hold all necessary images for plots as well as output images and gifs
 │   ├── logos/                  # Folder with logos for all teams, the NFL, the NFC, and AFC
 │   ├── test_plots/             # Folder with demo plots to show what team colors look like once plotted
+│   ├── gif/                    # Folder with gifs of plays. Ignored in git repository
+│   ├── temp/                   # A temporary folder that will be created when making gifs
+├── data/                       # Data files provided for analysis
 ├── .gitignore                  # Files to ignore when commiting to git repository
 ├── bdb_filepaths.py            # Filepath centralization
 ├── requirements.txt            # Required packages and versions for this repository
 └── README.md                   # README for Directory
 ```
 
+**Note**: Per the competition's official rules, the data cannot be published outside of the competition, and any external data must be made publically available to all participants. The `data/` directory above contains the publically available data provided in the competiton, as well as a file used to color plots according to team color
+
+### Helper File Namespaces
+
+The functions contained in the files in the `bdb_helpers/` subdirectory are named in a way such that their importing into other files will make apparent what that function is trying to do. This is achieved by aliasing the helper file when importing it into another script. The helper files should be imported as follows:
+
+```
+import bdb_helpers.coord_ops as coord_ops
+import bdb_helpers.data_loaders as load         # e.g. load.tracking_data()
+import bdb_helpers.data_mergers as merge        # e.g. merge.tracking_and_playing()
+import bdb_helpers.file_movers as file_ops      # e.g. file_ops.make_gif_temp_dir()
+import bdb_helpers.input_checkers as check      # e.g. check.game_id()
+import bdb_helpers.lookup as find               # e.g. find.first_down_line()
+import bdb_helpers.plot_helpers as draw         # e.g. draw.play_gif()
+```
+
 ## Author
+
 <a href="mailto:ross.a.drucker@gmail.com">Ross Drucker</a>
