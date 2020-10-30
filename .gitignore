@@ -2,5 +2,6 @@ Untitled.*
 data/
 .ipynb_checkpoints/
 img/temp/
-img/gif
+img/gif/
 __pycache__/
+bdb_helpers/util.py
